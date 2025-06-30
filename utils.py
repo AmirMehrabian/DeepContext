@@ -8,10 +8,11 @@ def model_builder(context_dim, num_actions, output_size=1):
 
     model = models.Sequential([
         layers.Input(shape=(input_dim,)),
-        layers.Dense(128, activation='relu'),
+        # layers.Dense(128, activation='relu'),
+        # layers.Dense(64, activation='relu'),
+        # layers.Dense(64, activation='relu'),
         layers.Dense(64, activation='relu'),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(64, activation='relu'),
+       # layers.Dropout(0.1),
         layers.Dense(output_size)  # Output: predicted reward
     ])
 
