@@ -2,17 +2,24 @@ from tensorflow.keras import layers, models
 import numpy as np
 import tensorflow as tf
 
+import tensorflow as tf
+from tensorflow.keras import layers, models
+
 
 def model_builder(context_dim, num_actions, output_size=1):
+    reg_coeff = 0.0001
+    reg1 = tf.keras.regularizers.l1(reg_coeff)
+    reg2 = tf.keras.regularizers.l2(reg_coeff)
+
     input_dim = context_dim + num_actions  # context + one-hot action
 
     model = models.Sequential([
         layers.Input(shape=(input_dim,)),
-        # layers.Dense(128, activation='relu'),
+        # layers.Dense(128, activation='relu', kernel_regularizer=reg2,  bias_regularizer=reg2),
+        # layers.Dense(64, activation='relu', kernel_regularizer=reg2,  bias_regularizer=reg2),
+        # # layers.Dense(64, activation='relu'),
+        layers.Dense(32, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
         # layers.Dense(64, activation='relu'),
-        # layers.Dense(64, activation='relu'),
-        layers.Dense(64, activation='relu'),
-       # layers.Dropout(0.1),
         layers.Dense(output_size)  # Output: predicted reward
     ])
 
@@ -20,6 +27,25 @@ def model_builder(context_dim, num_actions, output_size=1):
     model.compile(optimizer='adam', loss='mse')
 
     return model
+
+
+# def model_builder(context_dim, num_actions, output_size=1):
+#     input_dim = context_dim + num_actions  # context + one-hot action
+#
+#     model = models.Sequential([
+#         layers.Input(shape=(input_dim,)),
+#         # layers.Dense(128, activation='relu'),
+#         # layers.Dense(64, activation='relu'),
+#         # layers.Dense(64, activation='relu'),
+#         layers.Dense(64, activation='relu'),
+#        # layers.Dropout(0.1),
+#         layers.Dense(output_size)  # Output: predicted reward
+#     ])
+#
+#     # Compile model with MSE loss and Adam optimizer
+#     model.compile(optimizer='adam', loss='mse')
+#
+#     return model
 
 
 def context_builder(r_state, p_jam, p_signal):
