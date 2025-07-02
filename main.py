@@ -30,9 +30,9 @@ input_model_size = number_context
 # Epsilon setting
 epsilon_init = 0.99
 epislon_min = 0
-epsilon_decay = 0.025
+epsilon_decay = 0.015
 
-num_episodes = 80
+num_episodes = 90
 avg_error = []
 avg_rev = []
 
@@ -50,9 +50,11 @@ for index_action, action in enumerate(action_set):
     buffers.append(ReplayBuffer(capacity=buffer_capacity, input_model_size=input_model_size))
 
 eps_zero_count = 0
+all_avg_error = 0
 for episode_index in range(num_episodes):
 
     epsilon = max(epislon_min, epsilon_init - (episode_index * epsilon_decay))
+
     print(f"Episode: {episode_index + 1}, Epsilon: {epsilon}")
 
     # Randomly selecting the action and first episode
@@ -88,7 +90,8 @@ for episode_index in range(num_episodes):
         config_dict['action_index'] = action_index
         config_dict['num_pilot_block'] = action_set[action_index]
         # print(counter, est_reward_vector,action_index)
-        print(counter, end=', ')
+        if counter % 20 == 0:
+            print(counter, end=', ')
 
         # Observing new env params based on step_params
         config_dict['N_tc'] = step_params[0]
@@ -123,8 +126,11 @@ for episode_index in range(num_episodes):
     print("-" * 50)
     if epsilon <= 0.0001:
         avg_curve = avg_curve + avg_vec
+        all_avg_error = all_avg_error + agg_err / step_list.shape[1]
         eps_zero_count += 1
 
+
+print('total_average_error: ', all_avg_error/eps_zero_count)
 plt.plot(list(range(num_episodes)), avg_error)
 plt.xlabel("Episodes")
 plt.ylabel("Average Error")

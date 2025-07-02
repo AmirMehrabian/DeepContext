@@ -7,7 +7,7 @@ from tensorflow.keras import layers, models
 
 
 def model_builder(context_dim, num_actions, output_size=1):
-    reg_coeff = 0.0001
+    reg_coeff = 0.0000
     reg1 = tf.keras.regularizers.l1(reg_coeff)
     reg2 = tf.keras.regularizers.l2(reg_coeff)
 
@@ -18,7 +18,8 @@ def model_builder(context_dim, num_actions, output_size=1):
         # layers.Dense(128, activation='relu', kernel_regularizer=reg2,  bias_regularizer=reg2),
         # layers.Dense(64, activation='relu', kernel_regularizer=reg2,  bias_regularizer=reg2),
         # # layers.Dense(64, activation='relu'),
-        layers.Dense(32, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
+        layers.Dense(128, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
+        layers.Dense(128, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
         # layers.Dense(64, activation='relu'),
         layers.Dense(output_size)  # Output: predicted reward
     ])

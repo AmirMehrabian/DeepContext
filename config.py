@@ -53,7 +53,7 @@ step_dict['env_params'] = np.array([
 
 
 step_dict['repeats'] = 50
-part_repeat = 20
+part_repeat = 100
 step_dict['N_tc_frame'] = np.concatenate([
     5000 * np.ones(part_repeat),
     3000 * np.ones(part_repeat),
