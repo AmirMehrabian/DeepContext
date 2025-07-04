@@ -5,6 +5,8 @@ import tensorflow as tf
 import tensorflow as tf
 from tensorflow.keras import layers, models
 
+from env_response import db2pow
+
 
 def model_builder(context_dim, num_actions, output_size=1):
     reg_coeff = 0.0001
@@ -18,7 +20,7 @@ def model_builder(context_dim, num_actions, output_size=1):
         # layers.Dense(128, activation='relu', kernel_regularizer=reg2,  bias_regularizer=reg2),
         # layers.Dense(64, activation='relu', kernel_regularizer=reg2,  bias_regularizer=reg2),
         # # layers.Dense(64, activation='relu'),
-        layers.Dense(32, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
+        layers.Dense(128, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
         # layers.Dense(64, activation='relu'),
         layers.Dense(output_size)  # Output: predicted reward
     ])
@@ -214,3 +216,64 @@ def model_builder_cnn(input_dim, output_size=1):
     model.compile(optimizer='adam', loss='mse')
 
     return model
+
+
+def create_context_features(config_dict, r_state, p_jam, p_signal, action_index):
+    """
+    Construct the feature vector for contextual bandit model.
+
+    Parameters:
+    - sir_log: float (SIR in dB)
+    - rho: float (correlation coefficient, abs between 0 and 1)
+    - n_b: int (number of pilot blocks = action)
+    - N_td: int (total data symbols)
+    - N_tp: int (pilot block length)
+    - K: int (number of repetitions/users)
+    - p_sig: float (signal power in dB)
+    - p_jam: float (jamming power in dB)
+
+    Returns:
+    - x_t: ndarray of shape (18,)
+    """
+    N_td = config_dict['N_d1']
+    N_tp = config_dict['Nt1']
+    K = config_dict['K']
+
+    n_b = config_dict['action_set'][action_index]
+    p_sig = db2pow(p_signal)
+    sir_log = p_signal - p_jam;
+    rho = abs(r_state[0]);
+    corr_symb = (N_td - ((n_b - 1) * N_tp)) / N_td
+
+    # Avoid sqrt of negative
+    inv_corr = np.sqrt(max(0, 4 - 4 * rho))
+    new_corr = 1 - ((inv_corr * corr_symb) ** 2) / 4
+
+    y_snr = db2pow(sir_log)
+    ps = 0.5 * (1 + y_snr * (1 - new_corr)) / (1 + y_snr)
+
+    y_snr_nojam = db2pow(p_sig)
+    ps_nojam = 0.5 * (1 + y_snr_nojam * (1 - new_corr)) / (1 + y_snr_nojam)
+
+    feature_vector = np.array([
+        sir_log,                           # 1
+        rho,                               # 2
+        1.0,                               # 3 (bias term)
+        n_b * sir_log,                     # 4
+        n_b * rho,                         # 5
+        n_b,                               # 6
+        new_corr,                          # 7
+        corr_symb,                         # 8
+        ps,                                # 9
+        (1 - ps) * corr_symb,              # 10
+        (1 - ps) ** (K - 1),               # 11
+        ((1 - ps) ** (K - 1)) * corr_symb,   # 12
+        ps_nojam,                          # 13
+        (1 - ps_nojam) * corr_symb,        # 14
+        (1 - ps_nojam) ** (K - 1),         # 15
+        ((1 - ps_nojam) ** (K - 1)) * corr_symb,  # 16
+        p_sig,                             # 17
+        p_jam                              # 18
+    ])
+
+    return feature_vector

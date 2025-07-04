@@ -2,7 +2,7 @@ from tensorflow.keras import layers, models
 import numpy as np
 from config import config_dict, step_dict
 from utils import epsilon_greedy, context_builder, create_grid_rbf_centers, model_builder_cnn, model_builder, \
-    model_feeder, encode_with_rbf, ReplayBuffer_CNN, ReplayBuffer, model_feeder_no_action
+    model_feeder, encode_with_rbf, ReplayBuffer_CNN, ReplayBuffer, model_feeder_no_action, create_context_features
 from env_response import env_response
 import matplotlib.pyplot as plt
 
@@ -24,15 +24,15 @@ step_list = step_dict['eval_episodes_pisodes']
 action_set = config_dict['action_set']
 print(action_set)
 number_actions = len(action_set)
-number_context = 3
+number_context = 18
 
 input_model_size = number_context
 # Epsilon setting
 epsilon_init = 0.99
 epislon_min = 0
-epsilon_decay = 0.025
+epsilon_decay =0.03  #0.025
 
-num_episodes = 80
+num_episodes = 45
 avg_error = []
 avg_rev = []
 
@@ -50,6 +50,7 @@ for index_action, action in enumerate(action_set):
     buffers.append(ReplayBuffer(capacity=buffer_capacity, input_model_size=input_model_size))
 
 eps_zero_count = 0
+all_avg_error = 0
 for episode_index in range(num_episodes):
 
     epsilon = max(epislon_min, epsilon_init - (episode_index * epsilon_decay))
@@ -69,7 +70,7 @@ for episode_index in range(num_episodes):
 
     # Initialize the first context
     total_rev, r_state, p_jam, p_signal = env_response(config_dict)
-    context = context_builder(r_state, p_jam, p_signal)
+   # context_pre = context_builder(r_state, p_jam, p_signal)
 
     avg_vec = []
     agg_err = 0
@@ -79,6 +80,7 @@ for episode_index in range(num_episodes):
         est_reward_vector = []
 
         for index_action, action in enumerate(action_set):
+            context = create_context_features(config_dict, r_state, p_jam, p_signal, index_action)
             model = model_list[index_action]
             model_input = model_feeder_no_action(context)
             model_output = model.predict(model_input, verbose=False)
@@ -88,7 +90,8 @@ for episode_index in range(num_episodes):
         config_dict['action_index'] = action_index
         config_dict['num_pilot_block'] = action_set[action_index]
         # print(counter, est_reward_vector,action_index)
-        print(counter, end=', ')
+        if counter % 20 == 0:
+             print(counter, end=', ')
 
         # Observing new env params based on step_params
         config_dict['N_tc'] = step_params[0]
@@ -99,6 +102,7 @@ for episode_index in range(num_episodes):
         total_rev, r_state, p_jam, p_signal = env_response(config_dict)
 
         # new_input_sample = model_feeder(context, index_action, number_actions)
+        context = create_context_features(config_dict, r_state, p_jam, p_signal, action_index)
         new_input_sample = model_feeder_no_action(context)
         model = model_list[action_index]
         buffer = buffers[action_index]
@@ -111,7 +115,7 @@ for episode_index in range(num_episodes):
         buffer.add_to_buffer(new_input_sample, total_rev.reshape(-1, 1))
 
         # observing new context
-        context = context_builder(r_state, p_jam, p_signal)
+        #context = context_builder(r_state, p_jam, p_signal)
 
         if counter % learning_interval == 0 and counter > 0:
             batch_input, batch_output = buffer.sample_from_buffer(batch_size)
@@ -123,7 +127,11 @@ for episode_index in range(num_episodes):
     print("-" * 50)
     if epsilon <= 0.0001:
         avg_curve = avg_curve + avg_vec
+        all_avg_error = all_avg_error + agg_err / step_list.shape[1]
         eps_zero_count += 1
+
+print('total_average_error: ', all_avg_error / eps_zero_count)
+print(np.mean(avg_curve / eps_zero_count))
 
 plt.plot(list(range(num_episodes)), avg_error)
 plt.xlabel("Episodes")
