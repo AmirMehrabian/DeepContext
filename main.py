@@ -30,9 +30,9 @@ input_model_size = number_context
 # Epsilon setting
 epsilon_init = 0.99
 epislon_min = 0
-epsilon_decay = 0.015
+epsilon_decay = 0.03
 
-num_episodes = 90
+num_episodes = 45
 avg_error = []
 avg_rev = []
 
@@ -131,22 +131,23 @@ for episode_index in range(num_episodes):
 
 
 print('total_average_error: ', all_avg_error/eps_zero_count)
+plt.figure(1)
 plt.plot(list(range(num_episodes)), avg_error)
 plt.xlabel("Episodes")
 plt.ylabel("Average Error")
 plt.grid(True)
-plt.show()
 
+plt.figure(2)
 plt.plot(list(range(step_list.shape[1])), avg_curve / eps_zero_count)
 plt.xlabel("Steps")
 plt.ylabel("Average Error")
 plt.grid(True)
-plt.show()
 
+plt.figure(3)
 plt.plot(list(range(num_episodes)), avg_rev)
 plt.xlabel("Episodes")
 plt.ylabel("Average Rev")
 plt.grid(True)
-plt.show()
+
 
 print(np.mean(avg_curve / eps_zero_count))
