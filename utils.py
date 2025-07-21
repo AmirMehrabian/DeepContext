@@ -1,7 +1,4 @@
-from tensorflow.keras import layers, models
 import numpy as np
-import tensorflow as tf
-
 import tensorflow as tf
 from tensorflow.keras import layers, models
 
@@ -30,28 +27,25 @@ def model_builder(context_dim, num_actions, output_size=1):
     return model
 
 
-# def model_builder(context_dim, num_actions, output_size=1):
-#     input_dim = context_dim + num_actions  # context + one-hot action
-#
-#     model = models.Sequential([
-#         layers.Input(shape=(input_dim,)),
-#         # layers.Dense(128, activation='relu'),
-#         # layers.Dense(64, activation='relu'),
-#         # layers.Dense(64, activation='relu'),
-#         layers.Dense(64, activation='relu'),
-#        # layers.Dropout(0.1),
-#         layers.Dense(output_size)  # Output: predicted reward
-#     ])
-#
-#     # Compile model with MSE loss and Adam optimizer
-#     model.compile(optimizer='adam', loss='mse')
-#
-#     return model
-
 
 def context_builder(r_state, p_jam, p_signal):
     c0 = np.degrees(np.acos(np.abs(r_state))) / 90
     return np.array([c0[0], p_jam, p_signal])
+
+def context_builder_5features(r_state, p_jam, p_signal):
+    c0 = np.degrees(np.acos(np.abs(r_state))) / 90
+    return np.array([np.abs(r_state)[0], p_jam, p_signal, c0[0], c0[0]*90])
+
+def context_builder_12features(r_state, p_jam, p_signal, index_action, config):
+    action = config['action_set'][index_action]
+    max_reward = config['N_d1']-((action - 1)*config['Nt1'])
+    max_reward_norm = max_reward/config['N_d1']
+    c0 = np.degrees(np.acos(np.abs(r_state))) / 90
+    rho = np.abs(r_state)[0]
+    sir_log = p_signal - p_jam
+    return np.array([1, sir_log, action, action*sir_log,
+                     action*rho, rho, p_jam, p_signal,
+                     c0[0], c0[0]*90,  max_reward_norm])
 
 
 def model_feeder(context, action_index, number_actions):
@@ -68,12 +62,7 @@ def model_feeder_no_action(context):
 
 
 def epsilon_greedy(epsilon, q_values):
-    """
-    epsilon: float in [0, 1] — probability of exploration
-    q_values: array of estimated rewards for each action
 
-    Returns: selected action (int)
-    """
     if np.random.rand() < epsilon:
         # Explore: choose random action
         return np.random.randint(len(q_values))
@@ -130,15 +119,6 @@ class ReplayBuffer:
 
 
 def create_grid_rbf_centers(n1=5, n2=5, n3=5):
-    """
-    Creates a grid of RBF centers for 3D input space.
-
-    - n1: number of grid points along dim 0 (range 0 to 1)
-    - n2, n3: number of grid points along dim 1 & 2 (range -1 to 1)
-
-    Returns:
-        centers: np.ndarray of shape (n1*n2*n3, 3)
-    """
     x1 = np.linspace(0.0, 1.0, n1)  # for dim 0
     x2 = np.linspace(-0.2, 1.0, n2)  # for dim 1
     x3 = np.linspace(-0.2, 1.0, n3)  # for dim 2

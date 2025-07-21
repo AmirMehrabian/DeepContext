@@ -1,7 +1,8 @@
 import numpy as np
 from config import config_dict, step_dict
 from utils import epsilon_greedy, context_builder, create_grid_rbf_centers, model_builder_cnn, model_builder, \
-    model_feeder, encode_with_rbf, ReplayBuffer_CNN, ReplayBuffer, model_feeder_no_action
+    model_feeder, encode_with_rbf, ReplayBuffer_CNN, ReplayBuffer, model_feeder_no_action, context_builder_5features, \
+    context_builder_12features
 from env_response import env_response
 import matplotlib
 matplotlib.use('TkAgg')
@@ -25,7 +26,7 @@ step_list = step_dict['eval_episodes_pisodes']
 action_set = config_dict['action_set']
 print(action_set)
 number_actions = len(action_set)
-number_context = 3
+number_context = 12
 
 input_model_size = number_context
 # Epsilon setting
@@ -40,7 +41,7 @@ avg_rev = []
 # replay_input_buffer = np.array([]).reshape(-1,input_model_size)
 # replay_output_buffer = np.array([]).reshape(-1,1)
 
-num_features = 3
+num_features = 11
 avg_curve = np.zeros(step_list.shape[1])
 
 model_list = []
@@ -87,9 +88,10 @@ for episode_index in range(num_episodes):
     for counter, step_params in enumerate(np.array(step_list).T):
 
         est_reward_vector = np.zeros(number_actions)
-        context = context_builder(r_state, p_jam, p_signal)
+        context = context_builder_5features(r_state, p_jam, p_signal)
         for index_action, action in enumerate(action_set):
-             x_vector[index_action] = context
+             x_vector[index_action] = context_builder_12features(r_state, p_jam, p_signal,  index_action, config_dict)
+
              theta_vectors[index_action] = np.linalg.pinv(A_matrices[index_action])@ b_vectors[index_action]
              est_reward_vector[index_action] = x_vector[index_action]@theta_vectors[index_action]
              est = x_vector[index_action]@theta_vectors[index_action]
@@ -136,6 +138,7 @@ for episode_index in range(num_episodes):
 
 
 print('total_average_error: ', all_avg_error/eps_zero_count)
+print('total_average_reward: ', np.mean(avg_curve / eps_zero_count))
 plt.figure(1)
 plt.plot(list(range(num_episodes)), avg_error)
 plt.xlabel("Episodes")
@@ -155,4 +158,5 @@ plt.ylabel("Average Rev")
 plt.grid(True)
 
 
-print(np.mean(avg_curve / eps_zero_count))
+
+plt.show()
