@@ -15,8 +15,8 @@ def model_builder(context_dim, num_actions, output_size=1):
         # layers.Dense(128, activation='relu', kernel_regularizer=reg2,  bias_regularizer=reg2),
         # layers.Dense(64, activation='relu', kernel_regularizer=reg2,  bias_regularizer=reg2),
         # # layers.Dense(64, activation='relu'),
-        layers.Dense(128, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
-        layers.Dense(128, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
+        layers.Dense(32, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
+        layers.Dense(32, activation='relu', kernel_regularizer=reg2, bias_regularizer=reg2),
         # layers.Dense(64, activation='relu'),
         layers.Dense(output_size)  # Output: predicted reward
     ])
